@@ -1,4 +1,5 @@
 const { Flight } = require('../models');
+const { Op } = require('sequelize');
 
 const flightController = {
   // Get all flights
@@ -23,6 +24,68 @@ const flightController = {
     } catch (error) {
       console.error('Error fetching flight:', error);
       res.status(500).json({ error: 'Error fetching flight' });
+    }
+  },
+
+  // Search flights by departure, arrival, and date
+  searchFlights: async (req, res) => {
+    try {
+      const { departure, arrival, date } = req.query;
+      
+      if (!departure && !arrival && !date) {
+        return res.status(400).json({ 
+          error: 'At least one search parameter (departure, arrival, or date) is required' 
+        });
+      }
+
+      const whereClause = {};
+      
+      if (departure) {
+        whereClause.departure = {
+          [Op.like]: `%${departure}%`
+        };
+      }
+      
+      if (arrival) {
+        whereClause.arrival = {
+          [Op.like]: `%${arrival}%`
+        };
+      }
+      
+      if (date) {
+        const searchDate = new Date(date);
+        
+        if (isNaN(searchDate.getTime())) {
+          return res.status(400).json({ 
+            error: 'Invalid date format. Please use YYYY-MM-DD format' 
+          });
+        }
+
+        const startDate = new Date(searchDate.setHours(0, 0, 0, 0));
+        const endDate = new Date(searchDate.setHours(23, 59, 59, 999));
+        
+        whereClause.departure_time = {
+          [Op.between]: [startDate, endDate]
+        };
+      }
+      
+      const flights = await Flight.findAll({
+        where: whereClause,
+        order: [['departure_time', 'ASC']]
+      });
+      
+      if (flights.length === 0) {
+        return res.status(404).json({ error: 'No flights found matching your criteria' });
+      }
+      
+      res.json({
+        count: flights.length,
+        flights: flights
+      });
+
+    } catch (error) {
+      console.error('Error searching flights:', error);
+      res.status(500).json({ error: 'Error searching flights' });
     }
   },
 

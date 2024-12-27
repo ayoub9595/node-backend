@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const flightRoutes = require('./routes/flightRoutes')
 const destinationRoutes = require('./routes/destinationRoutes');
-const { sequelize,Flight,Destination } = require('./models');
+const { sequelize, Flight, Destination } = require('./models');
+const { Op } = require('sequelize');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,27 +15,62 @@ app.use(express.json());
 app.use('/api/flights', flightRoutes);
 app.use('/api/destinations', destinationRoutes);
 
+const cleanupOldFlights = async () => {
+  const today = new Date();
+  const deletedCount = await Flight.destroy({
+    where: {
+      [Op.or]: [
+        { departure_time: { [Op.lt]: today } },
+        { arrival_time: { [Op.lt]: today } }
+      ]
+    }
+  });
+  console.log(`Deleted ${deletedCount} old flights`);
+};
+
 const seedFlights = async () => {
   const count = await Flight.count();
   if (count === 0) {
-    const dummyFlights = Array(10).fill().map((_, i) => ({
-      flight_number: `FL${1000 + i}`,
-      departure: ['Paris', 'London', 'New York', 'Tokyo', 'Dubai'][Math.floor(Math.random() * 5)],
-      arrival: ['Madrid', 'Berlin', 'Rome', 'Singapore', 'Sydney'][Math.floor(Math.random() * 5)],
-      departure_time: new Date(Date.now() + Math.random() * 7 * 24 * 60 * 60 * 1000),
-      arrival_time: new Date(Date.now() + (Math.random() * 7 + 1) * 24 * 60 * 60 * 1000),
-      price: Math.floor(Math.random() * 900) + 100
-    }));
+    const cities = [
+      'Paris', 'London', 'New York', 'Tokyo', 'Dubai',
+      'Madrid', 'Berlin', 'Rome', 'Singapore', 'Sydney',
+      'Barcelona', 'Amsterdam', 'Hong Kong', 'Seoul', 'Istanbul',
+      'Vienna', 'Prague', 'Bangkok', 'Mumbai', 'Cairo'
+    ];
+
+    const dummyFlights = Array(1000).fill().map((_, i) => {
+      const departureCity = cities[Math.floor(Math.random() * cities.length)];
+      let arrivalCity;
+      do {
+        arrivalCity = cities[Math.floor(Math.random() * cities.length)];
+      } while (arrivalCity === departureCity);
+
+      const baseDate = new Date();
+      const departureDate = new Date(baseDate.getTime() + (Math.random() * 30 * 24 * 60 * 60 * 1000)); // Random date within next 30 days
+      const flightDuration = (Math.random() * 12 + 2) * 60 * 60 * 1000; // Random duration between 2-14 hours
+      const arrivalDate = new Date(departureDate.getTime() + flightDuration);
+
+      return {
+        flight_number: `FL${10000 + i}`,
+        departure: departureCity,
+        arrival: arrivalCity,
+        departure_time: departureDate,
+        arrival_time: arrivalDate,
+        price: Math.floor(Math.random() * 1500) + 200 // Random price between 200-1700
+      };
+    });
 
     await Flight.bulkCreate(dummyFlights);
-    console.log('Added 10 dummy flights');
+    console.log('Added 1000 dummy flights');
+  } else {
+    await cleanupOldFlights();
   }
 };
 
 const seedDestinations = async () => {
   const count = await Destination.count();
   if (count === 0) {
-    const destinations = [
+    const newDestinations =[
       {
           name:"Voyage à Venice",
           url:"https://cdn.britannica.com/62/153462-050-3D4F41AF/Grand-Canal-Venice.jpg",
@@ -76,7 +112,8 @@ const seedDestinations = async () => {
           price:20000
       }
   ]
-    await Destination.bulkCreate(destinations);
+
+    await Destination.bulkCreate(newDestinations);
     console.log('Added destinations');
   }
 };
