@@ -1,11 +1,10 @@
 const { Sequelize } = require('sequelize');
 const config = require('../config/database');
-const Flight = require('./flights');
-const Destination = require('./destinations');
 
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env];
 
+// Create the Sequelize instance first
 const sequelize = new Sequelize(
   dbConfig.database,
   dbConfig.username,
@@ -16,10 +15,18 @@ const sequelize = new Sequelize(
   }
 );
 
+// Import models
+const Flight = require('./flights');
+const Destination = require('./destinations');
+const User = require('./users');
+
+// Initialize models
 const models = {
   Flight: Flight(sequelize),
   Destination: Destination(sequelize),
+  User: User(sequelize),
   sequelize
 };
 
+// Export models
 module.exports = models;

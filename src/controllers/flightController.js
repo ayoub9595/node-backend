@@ -74,10 +74,6 @@ const flightController = {
         order: [['departure_time', 'ASC']]
       });
       
-      if (flights.length === 0) {
-        return res.status(404).json({ error: 'No flights found matching your criteria' });
-      }
-      
       res.json({
         count: flights.length,
         flights: flights
