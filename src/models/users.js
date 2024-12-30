@@ -58,5 +58,19 @@ module.exports = (sequelize) => {
     }
   });
 
+  User.associate = (models) => {
+    User.hasMany(models.Booking, {
+      foreignKey: 'userId',
+      as: 'bookings'
+    });
+    User.belongsToMany(models.Flight, {
+      through: models.Booking,
+      foreignKey: 'userId',
+      otherKey: 'flightId',
+      as: 'flights'
+    });
+  };
+
   return User;
 };
+

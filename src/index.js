@@ -3,6 +3,7 @@ const cors = require('cors');
 const flightRoutes = require('./routes/flightRoutes');
 const destinationRoutes = require('./routes/destinationRoutes');
 const userRoutes = require('./routes/userRoutes');
+const bookingRoutes = require('./routes/bookingRoutes.js');
 const { sequelize, Flight, Destination, User } = require('./models');
 const { Op } = require('sequelize');
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api/flights', flightRoutes);
 app.use('/api/destinations', destinationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 const cleanupOldFlights = async () => {
   const today = new Date();

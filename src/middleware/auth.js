@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = async (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
@@ -12,15 +12,13 @@ module.exports = async (req, res, next) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
       
-      // Calculate token expiration
       const currentTimestamp = Math.floor(Date.now() / 1000);
       const timeToExpiry = decoded.exp - currentTimestamp;
       
       req.user = decoded;
       
-      // Add token info to the response headers
       res.set({
         'X-Token-Expires-In': timeToExpiry,
         'X-Token-Valid': 'true'
@@ -54,3 +52,5 @@ module.exports = async (req, res, next) => {
     });
   }
 };
+
+module.exports = authMiddleware;
